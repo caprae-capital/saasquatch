@@ -249,7 +249,7 @@ export function Profile({ onClose }: ProfileProps) {
                     type="submit"
                     className="w-full py-2.5 px-4 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2"
                   >
-                    {selectedPlan !== currentPlan ? 'Update Plan & Payment Details' : 'Update Payment Details'}
+             Update Payment Details
                   </button>
                 </form>
               </div>

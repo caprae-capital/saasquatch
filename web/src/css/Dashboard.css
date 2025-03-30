@@ -1,0 +1,13 @@
+.dashboardContainer {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: Arial, sans-serif;
+    height: 100vh;
+}
+
+.coming-soon {
+    font-size: 5rem;
+    color: #CCCCCC;
+    text-align: center;
+}

@@ -1,0 +1,26 @@
+.auth-container {
+    min-height: 100vh;
+    background-image: linear-gradient(to bottom right, #ecfdf5 0%, #f0fdfa 50%, #eff6ff 100%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+    gap: 1.5rem;
+}
+
+.auth-logo img {
+    max-width: 450px;
+}
+
+.auth-modal {
+    background-color: white;
+    border-radius: 1rem;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1),
+    0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    overflow: hidden;
+    padding: 2rem;
+    width: 100%;
+    max-width: 400px;
+    text-align: left;
+}

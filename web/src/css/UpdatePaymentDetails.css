@@ -1,0 +1,74 @@
+.payment-form > * + * {
+    margin-top: 1rem;
+}
+
+.field-group > * + * {
+    margin-top: 0.5rem;
+}
+
+.payment-label {
+    display: block;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: #374151;
+}
+
+.payment-input-wrapper {
+    position: relative;
+}
+
+.payment-input-icon {
+    position: absolute;
+    left: 0.75rem;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 1.25rem;
+    height: 1.25rem;
+    color: #9ca3af;
+}
+
+.payment-input {
+    display: block;
+    width: 100%;
+    border: 1px solid #e5e7eb;
+    border-radius: 0.5rem;
+    padding-left: 2.5rem;
+    padding-top: 0.625rem;
+    padding-bottom: 0.625rem;
+}
+
+.payment-input:focus {
+    border-color: #10b981;
+    outline: none;
+}
+
+.payment-input-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.75rem;
+    margin-top: 0.75rem;
+}
+
+.payment-input-narrow {
+    display: block;
+    width: 100%;
+    border: 1px solid #e5e7eb;
+    border-radius: 0.5rem;
+    padding: 0.5rem 0.75rem;
+}
+
+.payment-input-narrow:focus {
+    border-color: #10b981;
+    outline: none;
+}
+
+.payment-submit-button {
+    width: 100%;
+    padding: 0.625rem 1rem;
+    background-color: #059669;
+    color: #ffffff;
+    border: none;
+    border-radius: 0.5rem;
+    cursor: pointer;
+    transition: background-color 200ms ease;
+}
