@@ -8,7 +8,7 @@ import '../../css/Payment.css';
 
 const Payment = () => {
     const navigate = useNavigate();
-    const { currentUser } = useContext(DataContext);
+    const { currentUser, reloadCurrentUser } = useContext(DataContext);
     const [plan, setPlan] = useState({});
     const [loading, setLoading] = useState(true);
     const [submitting, setSubmitting] = useState(false);
@@ -80,6 +80,7 @@ const Payment = () => {
                 cvc: paymentData.cvc,
             });
             if (response.data.result === "success") {
+                await reloadCurrentUser();
                 navigate('/');
             } else {
                 setError(response.data.message);

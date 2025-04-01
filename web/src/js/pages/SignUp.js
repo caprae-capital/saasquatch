@@ -1,11 +1,13 @@
-import React, { useState } from 'react';
+import React, {useContext, useState} from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import '../../css/SignUp.css';
 import { User, Mail, Lock } from 'lucide-react';
+import {DataContext} from "../shared/DataContext";
 
 const Signup = () => {
     const navigate = useNavigate();
+    const { reloadCurrentUser } = useContext(DataContext);
     const [signupData, setSignupData] = useState({
         firstName: '',
         lastName: '',
@@ -36,6 +38,7 @@ const Signup = () => {
                 password: signupData.password,
             });
             if (response.data.result === "success") {
+                await reloadCurrentUser();
                 navigate('/plans');
             } else {
                 setError(response.data.message);

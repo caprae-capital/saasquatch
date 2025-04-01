@@ -1,27 +1,24 @@
-import React, { useEffect } from "react";
-import { useNavigate, Outlet } from "react-router-dom";
-import axios from "axios";
+import React, {useContext, useEffect} from "react";
+import {useNavigate, Outlet} from "react-router-dom";
 import Header from '../components/Header';
 import '../../css/DashboardLayout.css';
+import _ from "lodash";
+import {ACTIVE_STATUS, UNAUTHORIZED_USER} from "../shared/Constants";
+import {DataContext} from "../shared/DataContext";
 
 const DashboardLayout = () => {
     const navigate = useNavigate();
+    const { currentUser } = useContext(DataContext);
 
     useEffect(() => {
-        const checkLoggedIn = async () => {
-            try {
-                const response = await axios.get('/api/get_current_user');
-
-                if (response.status !== 200 || !response.data.id) {
-                    navigate('/login');
-                }
-            } catch (error) {
+        if (currentUser != null) {
+            if (_.isEqual(currentUser, UNAUTHORIZED_USER)) {
                 navigate('/login');
+            } else if (currentUser.subscription_status !== ACTIVE_STATUS) {
+                navigate('/plans');
             }
-        };
-
-        checkLoggedIn();
-    }, [navigate]);
+        }
+    }, [currentUser, navigate]);
 
     return (
         <div className="dashboard-layout">

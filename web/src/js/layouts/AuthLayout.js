@@ -1,33 +1,21 @@
-import React, { useEffect } from "react";
+import React, {useContext, useEffect} from "react";
 import { Outlet, useNavigate, useLocation } from "react-router-dom";
+import _ from "lodash";
 import logo from '../../assets/logo.svg';
 import '../../css/AuthLayout.css';
-import axios from "axios";
+import {DataContext} from "../shared/DataContext";
+import {PUBLIC_ENDPOINTS, UNAUTHORIZED_USER} from "../shared/Constants";
 
 const AuthLayout = () => {
     const navigate = useNavigate();
     const location = useLocation();
+    const { currentUser } = useContext(DataContext);
 
     useEffect(() => {
-        const checkLoggedIn = async () => {
-            try {
-                const response = await axios.get('/api/get_current_user');
-                if (response.data.subscription_status === 'active') {
-                    navigate('/');
-                } else if (response.data.id) {
-                    navigate('/plans');
-                } else if (location.pathname !== '/login' && location.pathname !== '/signup') {
-                    navigate('/login');
-                }
-            } catch (error) {
-                if (location.pathname !== '/login' && location.pathname !== '/signup') {
-                    navigate('/login');
-                }
-            }
-        };
-
-        checkLoggedIn();
-    }, [navigate, location.pathname]);
+        if (currentUser != null && _.isEqual(currentUser, UNAUTHORIZED_USER) && !PUBLIC_ENDPOINTS.includes(location.pathname)) {
+            navigate('/login');
+        }
+    }, [currentUser, navigate, location]);
 
     return (
         <div className="auth-container">

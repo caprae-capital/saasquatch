@@ -1,11 +1,13 @@
-import React, { useState } from 'react';
+import React, {useContext, useState} from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import '../../css/Login.css';
 import { Mail, Lock } from 'lucide-react';
+import {DataContext} from "../shared/DataContext";
 
 const Login = () => {
     const navigate = useNavigate();
+    const { reloadCurrentUser } = useContext(DataContext);
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
@@ -52,7 +54,12 @@ const Login = () => {
                 email: email,
                 password: password,
             });
-            console.log('Login successful:', response.data);
+            if (response.data.result === "success") {
+                await reloadCurrentUser();
+                navigate('/');
+            } else {
+                setError(response.data.message);
+            }
         } catch (error) {
             console.error('Error during login:', error);
         }
