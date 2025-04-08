@@ -46,7 +46,7 @@ function UpdatePlan() {
 
         setSuccess("Updating...");
         try {
-            const response = await axios.post('/api/plan_type', {
+            const response = await axios.post('/api/plan', {
                 planType: selectedPlan.stripe_plan_id,
             });
             if (response.data.result === "success") {

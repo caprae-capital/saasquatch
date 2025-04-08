@@ -16,22 +16,6 @@ class ApiController < ApplicationController
   end
 
   def plan_type
-    plan = Plan.find_by(stripe_plan_id: params[:planType])
-
-    price = Stripe::Price.retrieve(plan.stripe_price_id)
-
-    Stripe::PaymentIntent.create({
-                                   amount: price.unit_amount,
-                                   currency: price.currency,
-                                   customer: @current_user.stripe_customer_id,
-                                   payment_method: @current_user.default_card_id,
-                                   off_session: false,
-                                   confirm: true,
-                                   automatic_payment_methods: {
-                                     enabled: true,
-                                     allow_redirects: 'never'
-                                   }
-                                 })
     @current_user.update!(plan_type: params[:planType])
     render json: { result: "success" }
   rescue StandardError => e
@@ -84,6 +68,29 @@ class ApiController < ApplicationController
     )
 
     @current_user.update!(default_card_id: payment_method.id)
+    render json: { result: "success" }
+  rescue StandardError => e
+    render json: { result: "error", message: e.message }
+  end
+
+  def update_plan
+    plan = Plan.find_by(stripe_plan_id: params[:planType])
+
+    price = Stripe::Price.retrieve(plan.stripe_price_id)
+
+    Stripe::PaymentIntent.create({
+                                   amount: price.unit_amount,
+                                   currency: price.currency,
+                                   customer: @current_user.stripe_customer_id,
+                                   payment_method: @current_user.default_card_id,
+                                   off_session: false,
+                                   confirm: true,
+                                   automatic_payment_methods: {
+                                     enabled: true,
+                                     allow_redirects: 'never'
+                                   }
+                                 })
+    @current_user.update!(plan_type: params[:planType])
     render json: { result: "success" }
   rescue StandardError => e
     render json: { result: "error", message: e.message }

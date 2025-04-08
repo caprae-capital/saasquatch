@@ -5,6 +5,7 @@ Rails.application.routes.draw do
     post "plan_type" => "api#plan_type"
     post "purchase" => "api#purchase"
     post "payment" => "api#payment"
+    post "plan" => "api#update_plan"
     post "password" => "api#password"
     post "login" => "api#login"
     post "logout" => "api#logout"
