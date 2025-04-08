@@ -1,26 +1,21 @@
 import React, { useEffect, useState, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { CardNumberElement, CardExpiryElement, CardCvcElement, useStripe, useElements } from '@stripe/react-stripe-js';
 import { DataContext } from "../shared/DataContext";
 import axios from "axios";
 import loading_icon from "../../assets/loading.gif";
-import { CheckCircle2, ArrowLeft, User, CreditCard } from 'lucide-react';
+import { CheckCircle2, ArrowLeft } from 'lucide-react';
 import '../../css/Payment.css';
 
 const Payment = () => {
     const navigate = useNavigate();
+    const stripe = useStripe();
+    const elements = useElements();
     const { currentUser, reloadCurrentUser } = useContext(DataContext);
     const [plan, setPlan] = useState({});
     const [loading, setLoading] = useState(true);
     const [submitting, setSubmitting] = useState(false);
-    const [paymentData, setPaymentData] = useState({
-        nameOnCard: '',
-        cardNumber: '',
-        expiry: '',
-        cvc: ''
-    });
     const [error, setError] = useState('');
-
-    const isFormValid = Object.values(paymentData).every((value) => value.trim() !== '');
 
     useEffect(() => {
         const fetchPlan = async () => {
@@ -37,58 +32,34 @@ const Payment = () => {
         fetchPlan();
     }, [currentUser]);
 
-    const validateAndFormatExpiry = (value) => {
-        if (!/^(0[1-9]|1[0-2])\/\d{2}$/.test(value)) {
-            setError('Invalid expiry date format. Use MM/YY.');
-            return '';
-        }
-        setError('');
-        return value;
-    };
-
-    const handleExpiryBlur = (event) => {
-        const value = event.target.value.trim();
-
-        if (/^\d{4}$/.test(value)) {
-            const formattedExpiry = `${value.slice(0, 2)}/${value.slice(2)}`;
-            setPaymentData({ ...paymentData, expiry: formattedExpiry });
-            setError('');
-        } else if (/^(0[1-9]|1[0-2])\/\d{2}$/.test(value)) {
-            setPaymentData({ ...paymentData, expiry: value });
-            setError('');
-        } else {
-            setError(
-                'Invalid expiry date. Valid format is MM/YY'
-            );
-        }
-    };
-
     const handleSubmit = async (event) => {
         event.preventDefault();
-
-        const formattedExpiry = validateAndFormatExpiry(paymentData.expiry);
-        if (!formattedExpiry) {
-            return;
-        }
+        if (!stripe || !elements) return;
 
         setSubmitting(true);
-        try {
-            const response = await axios.post('/api/payment', {
-                nameOnCard: paymentData.nameOnCard,
-                cardNumber: paymentData.cardNumber,
-                expiry: paymentData.expiry,
-                cvc: paymentData.cvc,
-            });
-            if (response.data.result === "success") {
-                await reloadCurrentUser();
-                navigate('/');
-            } else {
-                setError(response.data.message);
-            }
-        } catch (error) {
+        const cardNumberElement = elements.getElement(CardNumberElement);
+        const { error, paymentMethod } = await stripe.createPaymentMethod({
+            type: 'card',
+            card: cardNumberElement,
+        });
+
+        if (error) {
             setError(error.message);
-        } finally {
             setSubmitting(false);
+        } else {
+            try {
+                const response = await axios.post('/api/purchase', {payment_method_id: paymentMethod.id});
+                if (response.data.result === "success") {
+                    await reloadCurrentUser();
+                    navigate('/');
+                } else {
+                    setError(response.data.message);
+                }
+            } catch (error) {
+                console.error('Error while storing payment method:', error);
+            } finally {
+                setSubmitting(false);
+            }
         }
     };
 
@@ -133,44 +104,22 @@ const Payment = () => {
                             </div>
                         </div>
                     )}
-
                     <div className="payment-input-group">
-                        <div className="payment-field-group">
-                            <label className="payment-label">Name on Card</label>
-                            <div className="payment-input-wrapper">
-                                <User className="payment-input-icon" />
-                                <input
-                                    type="text"
-                                    value={paymentData.nameOnCard}
-                                    onChange={(e) =>
-                                        setPaymentData({
-                                            ...paymentData,
-                                            nameOnCard: e.target.value,
-                                        })
-                                    }
-                                    className="payment-input"
-                                    placeholder="John Doe"
-                                    required
-                                />
-                            </div>
-                        </div>
-
                         <div className="payment-field-group">
                             <label className="payment-label">Card Number</label>
                             <div className="payment-input-wrapper">
-                                <CreditCard className="payment-input-icon" />
-                                <input
-                                    type="text"
-                                    value={paymentData.cardNumber}
-                                    onChange={(e) =>
-                                        setPaymentData({
-                                            ...paymentData,
-                                            cardNumber: e.target.value,
-                                        })
-                                    }
-                                    className="payment-input"
-                                    placeholder="1234 5678 9012 3456"
-                                    required
+                                <CardNumberElement
+                                    id="card-number"
+                                    options={{
+                                        style: {
+                                            base: {
+                                                fontSize: '18px',
+                                                color: '#424770',
+                                                '::placeholder': { color: '#aab7c4' },
+                                            },
+                                            invalid: { color: '#9e2146' },
+                                        },
+                                    }}
                                 />
                             </div>
                         </div>
@@ -178,35 +127,34 @@ const Payment = () => {
                         <div className="payment-input-grid">
                             <div className="payment-field-group">
                                 <label className="payment-label">Expiry Date</label>
-                                <input
-                                    type="text"
-                                    value={paymentData.expiry}
-                                    onChange={(e) =>
-                                        setPaymentData({
-                                            ...paymentData,
-                                            expiry: e.target.value,
-                                        })
-                                    }
-                                    onBlur={handleExpiryBlur}
-                                    className="payment-input-narrow"
-                                    placeholder="MM/YY"
-                                    required
+                                <CardExpiryElement
+                                    id="card-expiry"
+                                    options={{
+                                        style: {
+                                            base: {
+                                                fontSize: '18px',
+                                                color: '#424770',
+                                                '::placeholder': { color: '#aab7c4' },
+                                            },
+                                            invalid: { color: '#9e2146' },
+                                        },
+                                    }}
                                 />
                             </div>
                             <div className="payment-field-group">
                                 <label className="payment-label">CVC</label>
-                                <input
-                                    type="text"
-                                    value={paymentData.cvc}
-                                    onChange={(e) =>
-                                        setPaymentData({
-                                            ...paymentData,
-                                            cvc: e.target.value,
-                                        })
-                                    }
-                                    className="payment-input-narrow"
-                                    placeholder="123"
-                                    required
+                                <CardCvcElement
+                                    id="card-cvc"
+                                    options={{
+                                        style: {
+                                            base: {
+                                                fontSize: '18px',
+                                                color: '#424770',
+                                                '::placeholder': { color: '#aab7c4' },
+                                            },
+                                            invalid: { color: '#9e2146' },
+                                        },
+                                    }}
                                 />
                             </div>
                         </div>
@@ -232,7 +180,7 @@ const Payment = () => {
                     <button
                         type="submit"
                         className="payment-nav-button continue-button"
-                        disabled={!isFormValid || submitting}
+                        disabled={submitting}
                     >
                         Complete Signup
                     </button>

@@ -9,25 +9,31 @@
 #   end
 plans = [
   {
-    stripe_plan_id: 'starter',
+    stripe_plan_id: 'prod_S5cRRpwLziIkH3',
+    stripe_price_id: 'price_1RBRCyChxYzl4aG4qk9riGoE',
     name: 'Starter',
     price: 600,
     hours: 50,
-    features: ['50 hours of lead generation', 'Basic support', 'Weekly reports']
+    features: ['50 hours of lead generation', 'Basic support', 'Weekly reports'],
+    visible: true
   },
   {
-    stripe_plan_id: 'professional',
+    stripe_plan_id: 'prod_S5cS29NpBIadfT',
+    stripe_price_id: 'price_1RBRDPChxYzl4aG40VEqJNZi',
     name: 'Professional',
     price: 1200,
     hours: 100,
-    features: ['100 hours of lead generation', 'Priority support', 'Daily reports', 'Custom integrations']
+    features: ['100 hours of lead generation', 'Priority support', 'Daily reports', 'Custom integrations'],
+    visible: true
   },
   {
-    stripe_plan_id: 'enterprise',
+    stripe_plan_id: 'prod_S5cSTkyxh129gT',
+    stripe_price_id: 'price_1RBRDcChxYzl4aG48WwxQA4e',
     name: 'Enterprise',
     price: 2000,
     hours: 200,
-    features: ['200 hours of lead generation', '24/7 dedicated support', 'Real-time reporting', 'Custom integrations', 'Dedicated account manager']
+    features: ['200 hours of lead generation', '24/7 dedicated support', 'Real-time reporting', 'Custom integrations', 'Dedicated account manager'],
+    visible: true
   }
 ]
 

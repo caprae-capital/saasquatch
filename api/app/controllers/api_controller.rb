@@ -4,6 +4,10 @@ class ApiController < ApplicationController
 
   def signup
     user = User.create!(first_name: params[:firstName], last_name: params[:lastName], email: params[:email], password: params[:password])
+
+    customer = Stripe::Customer.create(email: user.email)
+    user.update!(stripe_customer_id: customer.id)
+
     user_session = user.user_sessions.create!(user:, token: SecureRandom.uuid, expires_at: 1.day.from_now)
     session[:token] = user_session.token
     render json: { result: "success" }
@@ -12,17 +16,84 @@ class ApiController < ApplicationController
   end
 
   def plan_type
+    plan = Plan.find_by(stripe_plan_id: params[:planType])
+
+    price = Stripe::Price.retrieve(plan.stripe_price_id)
+
+    Stripe::PaymentIntent.create({
+                                   amount: price.unit_amount,
+                                   currency: price.currency,
+                                   customer: @current_user.stripe_customer_id,
+                                   payment_method: @current_user.default_card_id,
+                                   off_session: false,
+                                   confirm: true,
+                                   automatic_payment_methods: {
+                                     enabled: true,
+                                     allow_redirects: 'never'
+                                   }
+                                 })
     @current_user.update!(plan_type: params[:planType])
     render json: { result: "success" }
   rescue StandardError => e
     render json: { result: "error", message: e.message }
   end
 
-  def payment
-    # TODO: handle name_on_card, card_number, expiry, cvc by sending to Stripe
-    puts params[:nameOnCard], params[:cardNumber], params[:expiry], params[:cvc]
+  def purchase
+    payment_method = Stripe::PaymentMethod.attach(
+      params[:payment_method_id],
+      { customer: @current_user.stripe_customer_id }
+    )
+
+    Stripe::Customer.update(
+      @current_user.stripe_customer_id,
+      invoice_settings: { default_payment_method: payment_method.id }
+    )
+
+    @current_user.update!(default_card_id: payment_method.id)
+
+    price = Stripe::Price.retrieve(@current_user.plan.stripe_price_id)
+
+    Stripe::PaymentIntent.create({
+                                   amount: price.unit_amount,
+                                   currency: price.currency,
+                                   customer: @current_user.stripe_customer_id,
+                                   payment_method: @current_user.default_card_id,
+                                   off_session: false,
+                                   confirm: true,
+                                   automatic_payment_methods: {
+                                     enabled: true,
+                                     allow_redirects: 'never'
+                                   }
+                                 })
+
     @current_user.update!(subscription_status: User::ACTIVE_STATUS)
     render json: { result: "success" }
+  rescue StandardError => e
+    render json: { result: "error", message: e.message }
+  end
+
+  def payment
+    payment_method = Stripe::PaymentMethod.attach(
+      params[:payment_method_id],
+      { customer: @current_user.stripe_customer_id }
+    )
+
+    Stripe::Customer.update(
+      @current_user.stripe_customer_id,
+      invoice_settings: { default_payment_method: payment_method.id }
+    )
+
+    @current_user.update!(default_card_id: payment_method.id)
+    render json: { result: "success" }
+  rescue StandardError => e
+    render json: { result: "error", message: e.message }
+  end
+
+  def get_payment_details
+    payment_method = Stripe::PaymentMethod.retrieve(@current_user.default_card_id)
+    render json: { result: "success", payment_method: }
+  rescue StandardError => e
+    render json: { result: "error", message: e.message }
   end
 
   def login
@@ -53,12 +124,14 @@ class ApiController < ApplicationController
 
   def plan
     plan = Plan.find_by(stripe_plan_id: @current_user.plan_type)
+    plan.pull_latest_price if plan.present?
     render json: { result: "success", plan: }
   rescue StandardError => e
     render json: { result: "error", message: e.message }
   end
 
   def plans
+    Plan.pull_all_prices
     plans = Plan.visible
     render json: { result: "success", plans: }
   rescue StandardError => e

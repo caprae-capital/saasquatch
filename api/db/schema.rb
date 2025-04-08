@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_03_29_144314) do
+ActiveRecord::Schema[8.0].define(version: 2025_04_08_020353) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -23,6 +23,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_03_29_144314) do
     t.boolean "visible", default: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.string "stripe_price_id", default: "", null: false
   end
 
   create_table "user_sessions", force: :cascade do |t|
@@ -44,6 +45,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_03_29_144314) do
     t.string "plan_type"
     t.string "subscription_status", default: "new", null: false
     t.string "stripe_customer_id"
+    t.string "default_card_id"
   end
 
   add_foreign_key "user_sessions", "users"

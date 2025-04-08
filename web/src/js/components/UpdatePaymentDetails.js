@@ -1,126 +1,127 @@
-import React, { useState } from 'react';
-import { User, CreditCardIcon } from 'lucide-react';
+import React, {useEffect, useState} from 'react';
+import {CreditCardIcon} from 'lucide-react';
+import { CardNumberElement, CardExpiryElement, CardCvcElement, useStripe, useElements } from '@stripe/react-stripe-js';
 import '../../css/UpdatePaymentDetails.css';
 import axios from "axios";
+import loading_icon from "../../assets/loading.gif";
 
 function UpdatePaymentDetails() {
-    const blankPaymentData = {
-        nameOnCard: '',
-        cardNumber: '',
-        expiry: '',
-        cvc: ''
-    }
-    const [paymentData, setPaymentData] = useState(blankPaymentData);
+    const stripe = useStripe();
+    const elements = useElements();
+    const [paymentDetailsLoading, setPaymentDetailsLoading] = useState(true);
+    const [paymentDetails, setPaymentDetails] = useState({});
     const [success, setSuccess] = useState('');
     const [error, setError] = useState('');
 
-    const validateAndFormatExpiry = (value) => {
-        if (!/^(0[1-9]|1[0-2])\/\d{2}$/.test(value)) {
-            setError('Invalid expiry date format. Use MM/YY.');
-            return '';
+    const fetchPaymentMethod = async () => {
+        try {
+            const response = await axios.get('/api/payment');
+            setPaymentDetails(response.data.payment_method);
+            setPaymentDetailsLoading(false);
+        } catch (err) {
+            setError('Failed to load payment method. Please try again later.');
+            setPaymentDetailsLoading(false);
         }
-        setError('');
-        return value;
     };
 
-    const handleExpiryBlur = (event) => {
-        const value = event.target.value.trim();
-        if (/^\d{4}$/.test(value)) {
-            const formattedExpiry = `${value.slice(0, 2)}/${value.slice(2)}`;
-            setPaymentData({ ...paymentData, expiry: formattedExpiry });
-            setError('');
-        } else if (/^(0[1-9]|1[0-2])\/\d{2}$/.test(value)) {
-            setPaymentData({ ...paymentData, expiry: value });
-            setError('');
-        } else {
-            setError('Invalid expiry date. Valid format is MM/YY');
-        }
-    };
+    useEffect(() => {
+        fetchPaymentMethod();
+    }, []);
 
     const handleSubmit = async (event) => {
         event.preventDefault();
         setSuccess('');
         setError('');
 
-        const formattedExpiry = validateAndFormatExpiry(paymentData.expiry);
-        if (!formattedExpiry) {
-            return;
-        }
-
         setSuccess("Updating...");
-        try {
-            const response = await axios.post('/api/payment', {
-                nameOnCard: paymentData.nameOnCard,
-                cardNumber: paymentData.cardNumber,
-                expiry: paymentData.expiry,
-                cvc: paymentData.cvc,
-            });
-            if (response.data.result === "success") {
-                setPaymentData(blankPaymentData);
-                setSuccess("Payment details updated successfully!");
-            } else {
-                setError(response.data.message);
-            }
-        } catch (error) {
+        const cardNumberElement = elements.getElement(CardNumberElement);
+        const { error, paymentMethod } = await stripe.createPaymentMethod({
+            type: 'card',
+            card: cardNumberElement,
+        });
+
+        if (error) {
             setError(error.message);
+        } else {
+            try {
+                const response = await axios.post('/api/payment', {payment_method_id: paymentMethod.id});
+                setSuccess("");
+                if (response.data.result === "success") {
+                    setPaymentDetailsLoading(true)
+                    fetchPaymentMethod();
+                    setSuccess('Payment Details saved successfully!');
+                } else {
+                    setError(response.data.message);
+                }
+            } catch (error) {
+                console.error('Error while storing payment method:', error);
+            } finally {
+                setPaymentDetailsLoading(false);
+            }
         }
     };
 
     return (
         <div className="update-payment-details-container">
             <form onSubmit={handleSubmit} className="payment-form">
-                <div className="field-group">
-                    <label className="payment-label">Name on Card</label>
-                    <div className="payment-input-wrapper">
-                        <User className="payment-input-icon" />
-                        <input
-                            type="text"
-                            value={paymentData.nameOnCard}
-                            onChange={(e) =>
-                                setPaymentData({ ...paymentData, nameOnCard: e.target.value })
-                            }
-                            className="payment-input"
-                            required
-                        />
-                    </div>
-                </div>
+                {paymentDetailsLoading ?
+                    <div className="loading-gif"><img src={loading_icon || ""} alt="Loading..."/></div> : (
+                        <div className="current-plan-card">
+                            <div className="current-plan-info">
+                                <div className="current-plan-icon-container">
+                                    <CreditCardIcon class="current-plan-icon"/>
+                                </div>
+                                <div className="current-plan-text">
+                                    <div className="current-plan-name">Last 4 Digits: {paymentDetails.card.last4}</div>
+                                    <div className="current-plan-price">Exp: {paymentDetails.card.exp_month}/{paymentDetails.card.exp_year}</div>
+                                </div>
+                            </div>
+                        </div>
+                    )}
 
                 <div className="field-group">
                     <label className="payment-label">Card Information</label>
                     <div className="payment-input-wrapper">
-                        <CreditCardIcon className="payment-input-icon" />
-                        <input
-                            type="text"
-                            value={paymentData.cardNumber}
-                            onChange={(e) =>
-                                setPaymentData({ ...paymentData, cardNumber: e.target.value })
-                            }
-                            className="payment-input"
-                            placeholder="Card number"
-                            required
+                        <CardNumberElement
+                            id="card-number"
+                            options={{
+                                style: {
+                                    base: {
+                                        fontSize: '18px',
+                                        color: '#424770',
+                                        '::placeholder': { color: '#aab7c4' },
+                                    },
+                                    invalid: { color: '#9e2146' },
+                                },
+                            }}
                         />
                     </div>
                     <div className="payment-input-grid">
-                        <input
-                            type="text"
-                            value={paymentData.expiry}
-                            onChange={(e) =>
-                                setPaymentData({ ...paymentData, expiry: e.target.value })
-                            }
-                            className="payment-input-narrow"
-                            placeholder="MM/YY"
-                            onBlur={handleExpiryBlur}
-                            required
+                        <CardExpiryElement
+                            id="card-expiry"
+                            options={{
+                                style: {
+                                    base: {
+                                        fontSize: '18px',
+                                        color: '#424770',
+                                        '::placeholder': { color: '#aab7c4' },
+                                    },
+                                    invalid: { color: '#9e2146' },
+                                },
+                            }}
                         />
-                        <input
-                            type="text"
-                            value={paymentData.cvc}
-                            onChange={(e) =>
-                                setPaymentData({ ...paymentData, cvc: e.target.value })
-                            }
-                            className="payment-input-narrow"
-                            placeholder="CVC"
-                            required
+                        <CardCvcElement
+                            id="card-cvc"
+                            options={{
+                                style: {
+                                    base: {
+                                        fontSize: '18px',
+                                        color: '#424770',
+                                        '::placeholder': { color: '#aab7c4' },
+                                    },
+                                    invalid: { color: '#9e2146' },
+                                },
+                            }}
                         />
                     </div>
                 </div>
